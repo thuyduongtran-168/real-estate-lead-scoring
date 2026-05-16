@@ -138,14 +138,9 @@ with st.sidebar:
                 st.error("❌ Chưa tìm thấy cấu hình [connections.gsheets] trong Secrets!")
                 st.stop()
                 
-            # Lấy thông tin từ Secrets và chuẩn hóa private_key
-            creds = dict(st.secrets.connections.gsheets)
-            if "private_key" in creds:
-                creds["private_key"] = creds["private_key"].replace("\\n", "\n")
-            
-            # Kết nối bằng cách truyền nguyên một dict vào tham số service_account
-            # Cách này giúp tránh lỗi 'unexpected keyword argument'
-            conn = st.connection("gsheets", type=GSheetsConnection, service_account=creds)
+            # Kết nối theo cách tiêu chuẩn của Streamlit
+            # Hệ thống sẽ tự động đọc từ phần Secrets [connections.gsheets]
+            conn = st.connection("gsheets", type=GSheetsConnection)
             new_df = conn.read(spreadsheet=SHEET_URL, worksheet="0")
             
             if new_df is not None and not new_df.empty:
