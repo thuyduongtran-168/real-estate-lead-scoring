@@ -124,31 +124,40 @@ def classify_lead(score):
 with st.sidebar:
     # Logo & Banner Section
     st.markdown('<div class="sidebar-logo">', unsafe_allow_html=True)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/MindX_Logo.png/800px-MindX_Logo.png", width=150) # Logo MindX
+    # Sử dụng link logo MindX chính thức
+    st.image("https://mindx.edu.vn/images/logo.png", width=150) 
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.header("⚙️ Cấu hình Hệ thống")
-    st.info("Hệ thống đã kết nối bảo mật với Google Sheets qua Service Account.")
+    st.info("Hệ thống đã kết nối bảo mật với Google Sheets.")
     
     if st.button("🔄 Tải & Chấm điểm AI", use_container_width=True, type="primary"):
         try:
-            # SỬ DỤNG KẾT NỐI BẢO MẬT
+            # Kiểm tra xem Secrets đã được cấu hình chưa
+            if "connections" not in st.secrets:
+                st.error("❌ Chưa tìm thấy cấu hình Secrets!")
+                st.stop()
+                
             conn = st.connection("gsheets", type=GSheetsConnection)
             new_df = conn.read(spreadsheet=SHEET_URL, worksheet="0")
             
-            # Xử lý chấm điểm
-            results = new_df['nhu_cau_mo_ta'].apply(calculate_score)
-            new_df['Score'] = [r[0] for r in results]
-            new_df['Reason'] = [r[1] for r in results]
-            new_df['Classification'] = new_df['Score'].apply(classify_lead)
-            new_df['Status'] = new_df['Classification']
-            
-            st.session_state['lead_data'] = new_df
-            st.success("Tải dữ liệu thành công!")
-            st.rerun()
+            if new_df is not None and not new_df.empty:
+                # Xử lý chấm điểm
+                results = new_df['nhu_cau_mo_ta'].apply(calculate_score)
+                new_df['Score'] = [r[0] for r in results]
+                new_df['Reason'] = [r[1] for r in results]
+                new_df['Classification'] = new_df['Score'].apply(classify_lead)
+                new_df['Status'] = new_df['Classification']
+                
+                st.session_state['lead_data'] = new_df
+                st.success("✅ Tải dữ liệu thành success!")
+                st.rerun()
+            else:
+                st.warning("⚠️ Không tìm thấy dữ liệu trong Sheet.")
         except Exception as e:
-            st.error(f"Lỗi kết nối Sheet: {e}")
-            st.info("Mẹo: Hãy đảm bảo bạn đã dán Secrets vào Streamlit Cloud.")
+            st.error(f"❌ Lỗi kết nối: {str(e)}")
+            st.markdown("---")
+            st.warning("**Mẹo khắc phục:** Hãy kiểm tra lại phần Secrets. Đảm bảo `private_key` được dán đúng định dạng (không thừa khoảng trắng).")
     
     st.divider()
     st.write("---")
