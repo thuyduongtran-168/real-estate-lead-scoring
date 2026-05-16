@@ -143,11 +143,9 @@ with st.sidebar:
             if "private_key" in creds:
                 creds["private_key"] = creds["private_key"].replace("\\n", "\n")
             
-            # Lọc bỏ 'type' để tránh xung đột với tham số của st.connection
-            creds_to_pass = {k: v for k, v in creds.items() if k != "type"}
-            
-            # Khởi tạo kết nối gsheets với các tham số đã lọc
-            conn = st.connection("gsheets", type=GSheetsConnection, **creds_to_pass)
+            # Kết nối bằng cách truyền nguyên một dict vào tham số service_account
+            # Cách này giúp tránh lỗi 'unexpected keyword argument'
+            conn = st.connection("gsheets", type=GSheetsConnection, service_account=creds)
             new_df = conn.read(spreadsheet=SHEET_URL, worksheet="0")
             
             if new_df is not None and not new_df.empty:
