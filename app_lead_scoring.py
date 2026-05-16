@@ -133,12 +133,19 @@ with st.sidebar:
     
     if st.button("🔄 Tải & Chấm điểm AI", use_container_width=True, type="primary"):
         try:
-            # Kiểm tra xem Secrets đã được cấu hình chưa
-            if "connections" not in st.secrets:
-                st.error("❌ Chưa tìm thấy cấu hình Secrets!")
+            # Kiểm tra Secrets
+            if "connections" not in st.secrets or "gsheets" not in st.secrets.connections:
+                st.error("❌ Chưa tìm thấy cấu hình [connections.gsheets] trong Secrets!")
                 st.stop()
                 
-            conn = st.connection("gsheets", type=GSheetsConnection)
+            # Lấy thông tin từ Secrets và TỰ ĐỘNG SỬA LỖI định dạng key
+            creds = dict(st.secrets.connections.gsheets)
+            if "private_key" in creds:
+                # Sửa lỗi phổ biến: thay thế các ký tự \n văn bản thành dấu xuống dòng thực tế
+                creds["private_key"] = creds["private_key"].replace("\\n", "\n")
+            
+            # Kết nối với bộ cấu hình đã được làm sạch
+            conn = st.connection("gsheets", type=GSheetsConnection, **creds)
             new_df = conn.read(spreadsheet=SHEET_URL, worksheet="0")
             
             if new_df is not None and not new_df.empty:
