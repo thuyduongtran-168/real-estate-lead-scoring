@@ -168,14 +168,34 @@ with st.sidebar:
                 new_df['Status'] = new_df['Classification']
                 
                 st.session_state['lead_data'] = new_df
-                st.success("✅ Tải dữ liệu thành success!")
+                st.success("✅ Tải dữ liệu thành công từ Google Sheets!")
                 st.rerun()
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu trong Sheet.")
         except Exception as e:
-            st.error(f"❌ Lỗi kết nối: {str(e)}")
-            st.markdown("---")
-            st.warning("**Mẹo khắc phục:** Hãy kiểm tra lại phần Secrets. Đảm bảo `private_key` được dán đúng định dạng (không thừa khoảng trắng).")
+            st.error(f"❌ Lỗi kết nối Google Sheets: {str(e)}")
+            st.warning("⚠️ Đang tự động chuyển sang chế độ Dữ liệu Mẫu (Mock Data) để bạn có thể tiếp tục sử dụng ứng dụng...")
+            
+            # --- FALLBACK MOCK DATA ---
+            mock_data = [
+                {"id": 1, "ten_khach": "Nguyễn Văn A", "sdt": "0901234567", "nhu_cau_mo_ta": "Tìm mua biệt thự quận 1, tài chính 30 tỷ"},
+                {"id": 2, "ten_khach": "Trần Thị B", "sdt": "0912345678", "nhu_cau_mo_ta": "Hỏi giá cho vui, không có nhu cầu"},
+                {"id": 3, "ten_khach": "Lê Văn C", "sdt": "0923456789", "nhu_cau_mo_ta": "Cần thuê sàn văn phòng ven sông"},
+                {"id": 4, "ten_khach": "Phạm Văn D", "sdt": "0934567890", "nhu_cau_mo_ta": "Mua shophouse, tài chính mạnh"},
+                {"id": 5, "ten_khach": "Hoàng Thị E", "sdt": "0945678901", "nhu_cau_mo_ta": "Nhầm số rồi nhé"},
+                {"id": 6, "ten_khach": "Vũ Văn F", "sdt": "0956789012", "nhu_cau_mo_ta": "Tôi là chủ doanh nghiệp, muốn mua sỉ 5 căn chung cư"},
+            ]
+            new_df = pd.DataFrame(mock_data)
+            
+            results = new_df['nhu_cau_mo_ta'].apply(calculate_score)
+            new_df['Score'] = [r[0] for r in results]
+            new_df['Reason'] = [r[1] for r in results]
+            new_df['Classification'] = new_df['Score'].apply(classify_lead)
+            new_df['Status'] = new_df['Classification']
+            
+            st.session_state['lead_data'] = new_df
+            st.success("✅ Đã tải Dữ liệu Mẫu thành công!")
+            st.rerun()
     
     st.divider()
     st.write("---")
