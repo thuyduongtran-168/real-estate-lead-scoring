@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 from io import BytesIO
 import re
 import unicodedata
@@ -138,20 +137,27 @@ with st.sidebar:
                 st.error("❌ Chưa tìm thấy cấu hình [connections.gsheets] trong Secrets!")
                 st.stop()
                 
-            # Lấy cấu hình từ Secrets
-            creds = dict(st.secrets.connections.gsheets)
+            import gspread
+            from google.oauth2.service_account import Credentials
             
-            # TỰ ĐỘNG SỬA LỖI KEY (Dù bạn dán kiểu gì cũng sẽ chạy được)
-            if "private_key" in creds:
-                # 1. Chuyển \n văn bản thành xuống dòng thật
-                fixed_key = creds["private_key"].replace("\\n", "\n")
-                # 2. Loại bỏ các khoảng trắng thừa ở đầu/cuối mỗi dòng
-                fixed_key = "\n".join([line.strip() for line in fixed_key.split("\n") if line.strip()])
-                creds["private_key"] = fixed_key
-
-            # Khởi tạo kết nối TRỰC TIẾP (Bỏ qua st.connection để tránh lỗi tham số)
-            conn = GSheetsConnection(connection_name="gsheets", **creds)
-            new_df = conn.read(spreadsheet=SHEET_URL, worksheet="0")
+            # Lấy cấu hình từ Secrets
+            creds_info = dict(st.secrets.connections.gsheets)
+            if "private_key" in creds_info:
+                creds_info["private_key"] = creds_info["private_key"].replace("\\n", "\n")
+            
+            # Khởi tạo quyền truy cập
+            scopes = [
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
+            credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
+            gc = gspread.authorize(credentials)
+            
+            # Mở sheet bằng URL
+            sh = gc.open_by_url(SHEET_URL)
+            worksheet = sh.get_worksheet(0)
+            data = worksheet.get_all_records()
+            new_df = pd.DataFrame(data)
             
             if new_df is not None and not new_df.empty:
                 # Xử lý chấm điểm
